@@ -13,14 +13,15 @@ BASE_DE_TREINO = "./datasets/synth1/synth1-train.csv"
 BASE_DE_TESTE = "./datasets/synth1/synth1-test.csv"
 DATASET = "synth1"
 TAM_POPULACAO = 50
-N_GERACOES = 5
+N_GERACOES = 50
 PROFUNDIDADE_MAX = 4
 TX_CRUZAMENTO = 0.9
 TX_MUTACAO = 0.05
-TIPO_SELECAO = "roleta"
+TIPO_SELECAO = "lexicase"
 TAM_TORNEIO = 2
+EPSILON = 2
 TX_ELITISMO = 1
-ARQUIVO_DE_SAIDA = formatted_date+"_resultado_"+TIPO_SELECAO+"_"+"TAM_POPULACAO"
+ARQUIVO_DE_SAIDA = "resultado_"+TIPO_SELECAO+"_"+DATASET
 NUMERO_REPETICOES = 1
 
 
@@ -72,7 +73,7 @@ def initializes(popsize, op_set, s, max_depth):
     return population
 
 
-def evolve(pop, train, cross_rate, mut_rate, sel_type, tourn_size, max_depth, generations,
+def evolve(pop, train, cross_rate, mut_rate, sel_type, tourn_size,epsilon, max_depth, generations,
            elitist, repetition):
     target_fitness = 0.0
     best_solution = None
@@ -103,13 +104,13 @@ def evolve(pop, train, cross_rate, mut_rate, sel_type, tourn_size, max_depth, ge
         for i in range(len(pop)):
             op = random_pick(operations, probabilities)
             if op == "cross":
-                child, better = gp.subtree_crossover(pop,sel_type, tourn_size, train,
+                child, better = gp.subtree_crossover(pop,sel_type,epsilon, tourn_size, train,
                                                      elitist)
             elif op == "mut":
-                child = gp.subtree_mutation(pop,sel_type, tourn_size, train,
+                child = gp.subtree_mutation(pop,sel_type,epsilon, tourn_size, train,
                                             max_depth, elitist)
             elif op == "rep":
-                child = gp.reproduction(pop,sel_type, tourn_size, train)
+                child = gp.reproduction(pop,sel_type,epsilon, tourn_size, train)
             next_gen.append(child)
 
             if elitist == 1:
@@ -188,7 +189,7 @@ def main():
         print("Execucao - %d" % i)
         pop = initializes(TAM_POPULACAO, op_set, s, PROFUNDIDADE_MAX)
         best_solution, result = evolve(pop, train, TX_CRUZAMENTO, TX_MUTACAO,TIPO_SELECAO,
-                                       TAM_TORNEIO, PROFUNDIDADE_MAX, N_GERACOES, TX_ELITISMO,
+                                       TAM_TORNEIO,EPSILON, PROFUNDIDADE_MAX, N_GERACOES, TX_ELITISMO,
                                        i)
         train_results = train_results + result
         winner = deepcopy(best_solution)

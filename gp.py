@@ -2,6 +2,7 @@ from random import sample,randint, choice
 from math import sqrt
 from copy import deepcopy
 import numpy as np
+import random
 
 class Node(object):
 
@@ -107,15 +108,17 @@ class Tree(object):
 
         return all_nodes[i]
 
-
-def subtree_crossover(population, sel_type, k, data, elitist):
-
+def subtree_crossover(population, sel_type,eps, k, data, elitist):
     if (sel_type == "torneio"):
         first, first_score = tournament_selection(population, k, data)
         second, second_score = tournament_selection(population, k, data)
     elif (sel_type == "roleta"):
         first, first_score = roulette_selection(population, data)
         second, second_score = roulette_selection(population, data)
+    elif (sel_type == "lexicase"):
+        # Cria uma lista de funções de caso
+        first, first_score = epsilon_lexicase_selection(population,k, data, eps)
+        second, second_score = epsilon_lexicase_selection(population,k, data, eps)
 
     first_parent = deepcopy(first)
     second_parent = deepcopy(second)
@@ -139,12 +142,13 @@ def subtree_crossover(population, sel_type, k, data, elitist):
         return second, x
 
 
-def subtree_mutation(population,sel_type, k, data, max_depth, elitist):
-
+def subtree_mutation(population,sel_type,eps, k, data, max_depth, elitist):
     if (sel_type == "torneio"):
         individual, score = tournament_selection(population, k, data)
     elif (sel_type == "roleta"):
         individual, score = roulette_selection(population, data)
+    elif (sel_type == "lexicase"):
+        individual, score = epsilon_lexicase_selection(population,k, data, eps)
 
     p = individual.primitives
     s = individual.set_dict
@@ -160,16 +164,18 @@ def subtree_mutation(population,sel_type, k, data, max_depth, elitist):
     else:
         return individual
 
-
-def reproduction(population,sel_type, k, data):
+def reproduction(population,sel_type,eps, k, data):
+    num_cases = int(len(data) * 0.5)
+    cases = random.sample(data, num_cases)
 
     if (sel_type == "torneio"):
         individual, score = tournament_selection(population, k, data)
     elif (sel_type == "roleta"):
         individual, score = roulette_selection(population, data)
+    elif (sel_type == "lexicase"):
+        individual, score = epsilon_lexicase_selection(population,k,data,eps)
 
     return deepcopy(individual)
-
 
 def fitness(tree, dataset):
 
@@ -199,8 +205,14 @@ def fitness(tree, dataset):
     nrmse = sqrt(np.sum((yi - y_eval) ** 2))
     nrmse = nrmse/sqrt(np.sum((yi - np.mean(yi)) ** 2))
 
-    return nrmse
+    # Compute the size penalty to avoid bloat
+    #penalty = 0.1
+    #size_penalty = penalty * tree.size()
 
+    # Add the size penalty to the fitness
+    #nrmse = nrmse + size_penalty
+
+    return nrmse
 
 def tournament_selection(population, n, data):
 
@@ -228,6 +240,49 @@ def roulette_selection(population, data):
     if population[index] == None:
         return roulette_selection(population, data)
     return population[index], weights[index]
+
+def epsilon_lexicase_selection(population, n, data, epsilon):
+    # Sorteia um conjunto de casos de teste
+    test_cases = sample(population, n)
+    # Ordena os casos de teste lexicograficamente
+    #test_cases.sort()
+    # Inicializa a lista de indivíduos selecionados
+    selected = []
+    # Para cada indivíduo na população
+    for individual in population:
+        # Inicializa a flag de falha
+        failed = False
+        # Para cada caso de teste em ordem lexicográfica
+        for case in test_cases:
+            # Avalia o indivíduo para o caso de teste
+            score = fitness(case, data)
+            # Se o erro do indivíduo para o caso de teste for maior que epsilon
+            if score > epsilon:
+                # Marca o indivíduo como falho e para a avaliação
+                failed = True
+                break
+        # Se o indivíduo passou em todos os casos de teste
+        if not failed:
+            # Adiciona o indivíduo à lista de selecionados
+            selected.append(individual)
+    # Se nenhum indivíduo passou em todos os casos de teste
+    if not selected:
+        # Seleciona um indivíduo aleatório da população
+        return epsilon_lexicase_selection(population, n, data, epsilon)
+    # Seleciona o melhor indivíduo dentre os selecionados
+    best = None
+    best_score = None
+    for item in selected:
+        score = fitness(item, data)
+        if (best_score == None) or (score < best_score):
+            best = item
+            best_score = score
+
+    if (best == None) or (best_score == None):
+        return epsilon_lexicase_selection(population, n, data, epsilon)
+
+    return best, best_score
+
 
 def _crossover(tree1, cross_pt1, cross_pt2):
 
