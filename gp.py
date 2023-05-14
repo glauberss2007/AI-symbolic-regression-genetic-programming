@@ -90,7 +90,6 @@ class Tree(object):
 
         return eq
 
-
     def nodes(self, node, i, n):
 
         if i > n:
@@ -125,7 +124,6 @@ def subtree_crossover(population, sel_type,eps, k, data, elitist):
 
     cross_pt1 = first_parent.random_node()
     cross_pt2 = second_parent.random_node()
-
     new_individual = _crossover(first_parent, cross_pt1, cross_pt2)
     new_score = fitness(new_individual, data)
     mean_score = (first_score + second_score)/2.0
@@ -206,11 +204,11 @@ def fitness(tree, dataset):
     nrmse = nrmse/sqrt(np.sum((yi - np.mean(yi)) ** 2))
 
     # Compute the size penalty to avoid bloat
-    #penalty = 0.1
-    #size_penalty = penalty * tree.size()
+    penalty = 0.05
+    size_penalty = penalty * tree.size
 
     # Add the size penalty to the fitness
-    #nrmse = nrmse + size_penalty
+    nrmse = nrmse + size_penalty
 
     return nrmse
 
