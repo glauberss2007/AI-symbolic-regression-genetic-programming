@@ -1,1 +1,1 @@
-# cn-tp1-regressao-simbolica
+# Symbolic regression - Genetic Programming
